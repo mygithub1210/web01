@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                  http://www.springframework.org/schema/beans/spring-beans.xsd
+                  http://www.springframework.org/schema/mvc
+                  http://www.springframework.org/schema/mvc/spring-mvc.xsd
+                  http://www.springframework.org/schema/context
+                  http://www.springframework.org/schema/context/spring-context.xsd
+                          http://www.springframework.org/schema/security
+                          http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!--配置权限框架
+        要求后台系统必须
+         认证(登录)  如果不登陆 不能访问系统当中的任何资源
+         授权 :    系统中的哪些资源可以使用
+    -->
+
+     <!--授权
+       auto-config="true"  让springsecurity框架提供登录的页面,处理登录的控制器,。。。。。
+       use-expressions="true" 使用权限框架中的表达式来控制资源访问
+
+       security:intercept-url 权限控制
+       pattern="/**" 控制的资源有哪些
+       access 访问资源的条件   hasRole('ADMIN') 必须登录之后是ADMIN角色才能访问
+     -->
+      <security:http security="none" pattern="/css/**"></security:http>
+      <security:http security="none" pattern="/js/**"></security:http>
+      <security:http security="none" pattern="/login.jsp" />
+     <security:http auto-config="true" use-expressions="true">
+        <!--  <security:intercept-url pattern="/**" access="hasRole('ROLE_ADMIN')"></security:intercept-url>-->
+           <!--a页面只要登录成功就可以访问-->
+              <security:intercept-url pattern="/a.html" access="isAuthenticated()"></security:intercept-url>
+           <!--b页面 登录成功之后判断是不是具备add权限-->
+             <security:intercept-url pattern="/b.html" access="hasAuthority('add')"></security:intercept-url>
+             <security:intercept-url pattern="/c.html" access="hasRole('ABC')"></security:intercept-url>
+         <!-- username-parameter="username"  等价于 getParameter("username")
+                               username-parameter="username"  获取用户名
+                              password-parameter="password"    获取密码
+                              login-processing-url="/login.do"  指定登录的控制器(权限框架提供的)
+                              default-target-url="/index.jsp"  //如果登录成功跳转的页面
+                              authentication-failure-url="/login.jsp"  //登录失败回到登录页
+         -->
+         <security:form-login login-page="/login.jsp"
+                              username-parameter="username"
+                              password-parameter="password"
+                              login-processing-url="/login.do"
+                              default-target-url="/index.jsp"
+                              authentication-failure-url="/login.jsp"
+         />
+
+
+         <!--关闭盗链安全请求-->
+         <security:csrf disabled="true" />
+
+         <security:logout logout-url="/logout.do" logout-success-url="/login.jsp" invalidate-session="true"/>
+
+     </security:http>
+
+    <!--认证 描述登录的限制信息-->
+    <security:authentication-manager>
+         <security:authentication-provider user-service-ref="userService">
+             <!--指定密码加密策略-->
+             <security:password-encoder ref="passwordEncoder"></security:password-encoder>
+
+             <!--<security:user-service >
+                 &lt;!&ndash;name="zhangsan" 登录的用户名是张三
+                     密码是123
+                      ROLE_ 代表为张三分配的是角色信息
+                     指定登录的用户权限是 authorities=“ROLE_ADMIN”
+                 &ndash;&gt;
+               &lt;!&ndash;  <security:user name="zhangsan" password="{noop}123" authorities="ROLE_ADMIN"></security:user>&ndash;&gt;
+             </security:user-service>-->
+         </security:authentication-provider>
+    </security:authentication-manager>
+
+
+    <context:component-scan base-package="com.atguigu"></context:component-scan>
+    <mvc:annotation-driven />
+    <!--开启注解方式权限控制-->
+    <security:global-method-security pre-post-annotations="enabled" />
+    <!--配置密码加密对象-->
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+
+</beans>
